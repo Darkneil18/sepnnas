@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OneSignal Test - Simple</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+        }
+        .test-card {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        }
+        .status-ok { color: #28a745; }
+        .status-error { color: #dc3545; }
+        .status-warning { color: #ffc107; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="test-card">
+                    <h2 class="mb-4 text-center">
+                        <i class="fas fa-bell me-2"></i>OneSignal Simple Test
+                    </h2>
+                    
+                    <div class="mb-4">
+                        <h5>Status</h5>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span>SDK Loaded:</span>
+                            <span id="sdk-status" class="status-warning">
+                                <i class="fas fa-spinner fa-spin me-1"></i>Checking...
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span>Initialized:</span>
+                            <span id="init-status" class="status-warning">
+                                <i class="fas fa-spinner fa-spin me-1"></i>Checking...
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span>User ID:</span>
+                            <span id="user-id-status" class="status-warning">
+                                <i class="fas fa-spinner fa-spin me-1"></i>Checking...
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span>Permission:</span>
+                            <span id="permission-status" class="status-warning">
+                                <i class="fas fa-spinner fa-spin me-1"></i>Checking...
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5>Actions</h5>
+                        <div class="d-grid gap-2 d-md-flex">
+                            <button class="btn btn-primary" onclick="requestPermission()">
+                                <i class="fas fa-bell me-2"></i>Request Permission
+                            </button>
+                            <button class="btn btn-success" onclick="checkStatus()">
+                                <i class="fas fa-sync me-2"></i>Check Status
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5>Console Output</h5>
+                        <div id="console-output" class="bg-dark text-light p-3 rounded" style="height: 200px; overflow-y: auto; font-family: monospace; font-size: 0.9rem;">
+                            <div>Console output will appear here...</div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <a href="dashboard/onesignal-debug.php" class="btn btn-outline-primary">
+                            <i class="fas fa-bug me-1"></i>Debug Page
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- OneSignal SDK v16 -->
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    
+    <!-- OneSignal Configuration -->
+    <script>
+        // Configuration
+        window.ONESIGNAL_APP_ID = "bbdac752-319a-4245-9f1b-7ef78cf88bbb";
+        
+        // Console output
+        const consoleOutput = document.getElementById('console-output');
+        
+        function logToConsole(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            consoleOutput.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+            console.log(message);
+        }
+        
+        // Initialize OneSignal
+        window.OneSignalDeferred = window.OneSignalDeferred || [];
+        OneSignalDeferred.push(async function(OneSignal) {
+            try {
+                logToConsole('Initializing OneSignal...');
+                
+                await OneSignal.init({
+                    appId: window.ONESIGNAL_APP_ID,
+                    allowLocalhostAsSecureOrigin: true,
+                    autoRegister: false,
+                    serviceWorkerParam: {
+                        scope: '/'
+                    },
+                    serviceWorkerPath: '/sw.js',
+                    promptOptions: {
+                        slidedown: {
+                            enabled: false
+                        }
+                    }
+                });
+                
+                logToConsole('OneSignal initialized successfully');
+                updateStatus('init-status', 'success', 'Initialized');
+                
+                // Check status after initialization
+                setTimeout(checkStatus, 1000);
+                
+            } catch (error) {
+                logToConsole('OneSignal initialization failed: ' + error);
+                logToConsole('Trying fallback initialization without service worker...');
+                
+                // Try fallback initialization
+                try {
+                    await OneSignal.init({
+                        appId: window.ONESIGNAL_APP_ID,
+                        allowLocalhostAsSecureOrigin: true,
+                        autoRegister: false,
+                        serviceWorkerParam: null,
+                        serviceWorkerPath: null,
+                        promptOptions: {
+                            slidedown: {
+                                enabled: false
+                            }
+                        }
+                    });
+                    
+                    logToConsole('OneSignal initialized successfully (fallback mode)');
+                    updateStatus('init-status', 'success', 'Initialized (Fallback)');
+                    
+                    // Check status after initialization
+                    setTimeout(checkStatus, 1000);
+                    
+                } catch (fallbackError) {
+                    logToConsole('Fallback initialization also failed: ' + fallbackError);
+                    updateStatus('init-status', 'error', 'Failed');
+                }
+            }
+        });
+        
+        // Update status display
+        function updateStatus(elementId, type, text) {
+            const element = document.getElementById(elementId);
+            const icon = type === 'success' ? 'check' : type === 'error' ? 'times' : 'exclamation-triangle';
+            const className = type === 'success' ? 'status-ok' : type === 'error' ? 'status-error' : 'status-warning';
+            
+            element.innerHTML = `<i class="fas fa-${icon} me-1"></i>${text}`;
+            element.className = className;
+        }
+        
+        // Check SDK status
+        function checkSDKStatus() {
+            if (typeof window.OneSignalDeferred !== 'undefined') {
+                updateStatus('sdk-status', 'success', 'Loaded');
+                logToConsole('OneSignal SDK loaded');
+            } else {
+                updateStatus('sdk-status', 'error', 'Not Loaded');
+                logToConsole('OneSignal SDK not loaded');
+            }
+        }
+        
+        // Check OneSignal status
+        function checkStatus() {
+            logToConsole('Checking OneSignal status...');
+            
+            if (typeof window.OneSignalDeferred !== 'undefined') {
+                window.OneSignalDeferred.push(async function(OneSignal) {
+                    try {
+                        // Check user ID
+                        const userId = await OneSignal.User.PushSubscription.id;
+                        if (userId) {
+                            updateStatus('user-id-status', 'success', userId.substring(0, 8) + '...');
+                            logToConsole('User ID: ' + userId);
+                        } else {
+                            updateStatus('user-id-status', 'warning', 'Not Subscribed');
+                            logToConsole('User not subscribed');
+                        }
+                        
+                        // Check permission
+                        const permission = await OneSignal.Notifications.permission;
+                        updateStatus('permission-status', 
+                            permission === 'granted' ? 'success' : permission === 'denied' ? 'error' : 'warning',
+                            permission.charAt(0).toUpperCase() + permission.slice(1)
+                        );
+                        logToConsole('Permission: ' + permission);
+                        
+                    } catch (error) {
+                        logToConsole('Error checking status: ' + error);
+                        updateStatus('user-id-status', 'error', 'Error');
+                        updateStatus('permission-status', 'error', 'Error');
+                    }
+                });
+            } else {
+                logToConsole('OneSignal SDK not available');
+            }
+        }
+        
+        // Request permission
+        function requestPermission() {
+            logToConsole('Requesting notification permission...');
+            
+            if (typeof window.OneSignalDeferred !== 'undefined') {
+                window.OneSignalDeferred.push(async function(OneSignal) {
+                    try {
+                        await OneSignal.Slidedown.promptPush();
+                        logToConsole('Permission prompt shown');
+                        
+                        // Check status after a delay
+                        setTimeout(checkStatus, 2000);
+                        
+                    } catch (error) {
+                        logToConsole('Error showing permission prompt: ' + error);
+                    }
+                });
+            } else {
+                logToConsole('OneSignal SDK not available');
+            }
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            logToConsole('Page loaded, checking SDK status...');
+            checkSDKStatus();
+        });
+    </script>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

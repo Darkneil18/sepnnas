@@ -1,0 +1,23 @@
+{
+  "name": "sepnas-event-management",
+  "version": "1.0.0",
+  "description": "SEPNAS Event Management System with OneSignal notifications",
+  "main": "index.js",
+  "scripts": {
+    "build": "echo 'Static build complete'",
+    "dev": "python -m http.server 3000",
+    "start": "python -m http.server 3000"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.38.0"
+  },
+  "devDependencies": {},
+  "keywords": [
+    "event-management",
+    "onesignal",
+    "supabase",
+    "vercel"
+  ],
+  "author": "SEPNAS",
+  "license": "MIT"
+}
